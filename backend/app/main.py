@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZIPMiddleware
 from app import config
-from app.routes import upload, query, voice
+from app.db.database import connect_db, close_db
+from app.routes import upload, query, voice, session, documents
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -42,6 +43,8 @@ app.add_middleware(GZIPMiddleware, minimum_size=1000)
 app.include_router(upload.router, prefix=config.API_V1_PREFIX)
 app.include_router(query.router, prefix=config.API_V1_PREFIX)
 app.include_router(voice.router, prefix=config.API_V1_PREFIX)
+app.include_router(session.router, prefix=config.API_V1_PREFIX)
+app.include_router(documents.router, prefix=config.API_V1_PREFIX)
 
 
 # === HEALTH CHECKS ===
@@ -94,12 +97,28 @@ async def startup_event():
     """Called when application starts."""
     logger.info(f"Starting {config.APP_NAME} v{config.APP_VERSION}")
     logger.info("API documentation available at /docs")
+    
+    # Initialize MongoDB connection
+    try:
+        await connect_db()
+        logger.info("✓ MongoDB Atlas connected")
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {str(e)}")
+        # Depending on requirements, you might want to raise here
+        # raise
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Called when application shuts down."""
     logger.info(f"Shutting down {config.APP_NAME}")
+    
+    # Close MongoDB connection
+    try:
+        await close_db()
+        logger.info("✓ MongoDB connection closed")
+    except Exception as e:
+        logger.error(f"Error closing MongoDB: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 """
 Document upload routes.
 Handles PDF file uploads and processing.
+Integrates with document tracking via DocumentService.
 """
 import logging
 from pathlib import Path
@@ -8,6 +9,7 @@ from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from app.models.response_models import UploadResponse
 from app.services.rag_service import RAGService
+from app.services.document_service import DocumentService
 from app import config
 
 logger = logging.getLogger(__name__)
@@ -31,10 +33,16 @@ def get_rag_service() -> RAGService:
     )
 
 
+def get_document_service() -> DocumentService:
+    """Dependency injection for document service."""
+    return DocumentService()
+
+
 @router.post("/", response_model=UploadResponse)
 async def upload_document(
     file: UploadFile = File(...),
-    rag_service: RAGService = Depends(get_rag_service)
+    rag_service: RAGService = Depends(get_rag_service),
+    document_service: DocumentService = Depends(get_document_service)
 ) -> UploadResponse:
     """
     Upload and process a PDF document.
@@ -88,8 +96,23 @@ async def upload_document(
 
         logger.info(f"Saved uploaded file: {file_path}")
 
-        # Process document
+        # Process document through RAG pipeline
         result = await rag_service.process_document(file_path, file.filename)
+
+        # Register document in database
+        try:
+            await document_service.register_document(
+                filename=file.filename,
+                file_path=str(file_path),
+                chunk_count=result["chunks_created"],
+                file_size=len(content),
+                embedding_count=result["chunks_created"]  # 1-to-1 with chunks
+            )
+            logger.info(f"Document registered in database: {file.filename}")
+        except Exception as e:
+            logger.error(f"Error registering document: {str(e)}")
+            # Don't fail the upload if registration fails
+            pass
 
         return UploadResponse(
             success=result["success"],
@@ -110,20 +133,25 @@ async def upload_document(
 
 
 @router.get("/status")
-async def upload_status(rag_service: RAGService = Depends(get_rag_service)) -> dict:
+async def upload_status(rag_service: RAGService = Depends(get_rag_service),
+                       document_service: DocumentService = Depends(get_document_service)) -> dict:
     """
     Get status of uploaded documents and vector store.
     
     Returns:
-    - **vector_store**: Statistics about the vector store
-    - **embedding_model**: Model used for embeddings
-    - **llm_model**: Model used for LLM responses
+    - **status**: API status
+    - **statistics**: Statistics about documents and vector store
     """
     try:
-        stats = rag_service.get_statistics()
+        rag_stats = rag_service.get_statistics()
+        doc_stats = await document_service.get_document_stats()
+        
         return {
             "status": "ready",
-            "statistics": stats
+            "statistics": {
+                "rag": rag_stats,
+                "documents": doc_stats
+            }
         }
     except Exception as e:
         logger.error(f"Error getting status: {str(e)}")

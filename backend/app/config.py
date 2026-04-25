@@ -36,6 +36,13 @@ OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-s
 FAISS_INDEX_PATH = VECTORS_DIR / "documents.index"
 FAISS_METADATA_PATH = VECTORS_DIR / "metadata.json"
 
+# === MongoDB Atlas Configuration ===
+MONGODB_URI = os.getenv(
+    "MONGODB_URI",
+    "mongodb+srv://user:password@cluster.mongodb.net/voxdocs"
+)
+DATABASE_NAME = os.getenv("DATABASE_NAME", "voxdocs")
+
 # === Speech Configuration ===
 # Whisper is part of OpenAI API
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "whisper-1")
