@@ -4,11 +4,15 @@ Main entry point for the Voice Document Assistant backend.
 """
 import logging
 from fastapi import FastAPI
+from fastapi import Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 from app import config
 from app.db.database import connect_db, close_db
-from app.routes import upload, query, voice, session, documents
+from app.dependencies.auth import require_current_user
+from app.middleware.auth import AuthMiddleware
+from app.routes import upload, query, voice, session, documents, auth
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,7 +31,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,16 +39,18 @@ app.add_middleware(
 
 # Gzip compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(AuthMiddleware)
 
 
 # === ROUTES ===
 
 # Include routers
-app.include_router(upload.router, prefix=config.API_V1_PREFIX)
-app.include_router(query.router, prefix=config.API_V1_PREFIX)
-app.include_router(voice.router, prefix=config.API_V1_PREFIX)
-app.include_router(session.router, prefix=config.API_V1_PREFIX)
-app.include_router(documents.router, prefix=config.API_V1_PREFIX)
+app.include_router(auth.router, prefix=config.API_V1_PREFIX)
+app.include_router(upload.router, prefix=config.API_V1_PREFIX, dependencies=[Depends(require_current_user)])
+app.include_router(query.router, prefix=config.API_V1_PREFIX, dependencies=[Depends(require_current_user)])
+app.include_router(voice.router, prefix=config.API_V1_PREFIX, dependencies=[Depends(require_current_user)])
+app.include_router(session.router, prefix=config.API_V1_PREFIX, dependencies=[Depends(require_current_user)])
+app.include_router(documents.router, prefix=config.API_V1_PREFIX, dependencies=[Depends(require_current_user)])
 
 
 # === HEALTH CHECKS ===
@@ -84,10 +90,13 @@ async def general_exception_handler(request, exc):
     General exception handler for unhandled errors.
     """
     logger.error(f"Unhandled exception: {str(exc)}")
-    return {
-        "error": "Internal server error",
-        "detail": str(exc)
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal server error",
+            "detail": str(exc),
+        },
+    )
 
 
 # === STARTUP/SHUTDOWN ===

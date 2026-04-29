@@ -30,6 +30,37 @@ VECTORS_DIR.mkdir(exist_ok=True)
 API_V1_PREFIX = "/api/v1"
 APP_NAME = "VoxDocs API"
 APP_VERSION = "1.0.0"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
+# === Authentication Configuration ===
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
+AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "voxdocs_access_token")
+AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "true"
+AUTH_COOKIE_SAMESITE = os.getenv("AUTH_COOKIE_SAMESITE", "lax")
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("ALLOWED_ORIGINS", FRONTEND_URL).split(",")
+    if origin.strip()
+]
+
+# === Google OAuth Configuration ===
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv(
+    "GOOGLE_REDIRECT_URI",
+    "http://localhost:8000/api/v1/auth/google/callback"
+)
+GOOGLE_OAUTH_STATE_COOKIE = os.getenv("GOOGLE_OAUTH_STATE_COOKIE", "voxdocs_google_state")
+GOOGLE_SCOPES = [
+    "openid",
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+]
+
+if GOOGLE_REDIRECT_URI.startswith("http://") and os.getenv("OAUTHLIB_INSECURE_TRANSPORT") != "1":
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 # === OpenAI Configuration ===
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")

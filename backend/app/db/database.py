@@ -5,7 +5,7 @@ Handles async MongoDB connection using Motor and Beanie.
 import logging
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from beanie import init_beanie
-from app.db.models import Session, Message, Document
+from app.db.models import User, Session, Message, Document
 from app import config
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ async def connect_db() -> None:
         # Initialize Beanie ORM with models
         await init_beanie(
             database=db,
-            document_models=[Session, Message, Document]
+            document_models=[User, Session, Message, Document]
         )
 
         logger.info("✓ Beanie initialized with models")

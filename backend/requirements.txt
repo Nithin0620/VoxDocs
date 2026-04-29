@@ -20,10 +20,14 @@ pydub==0.25.1
 
 # === HTTP Requests ===
 requests==2.31.0
+bcrypt==4.2.0
+google-auth==2.38.0
+google-auth-oauthlib==1.2.1
 
 # === Data Validation ===
 pydantic==2.4.2
 pydantic-settings==2.1.0
+email-validator==2.2.0
 
 # === Database (MongoDB) ===
 beanie==1.24.0
