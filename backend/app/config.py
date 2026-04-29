@@ -5,6 +5,10 @@ Centralized environment variable and application settings.
 import os
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # === Logging Configuration ===
 logging.basicConfig(

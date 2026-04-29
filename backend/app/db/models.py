@@ -3,8 +3,8 @@ Beanie ODM models for MongoDB Atlas.
 Defines document structures for Session, Message, and Document.
 """
 from datetime import datetime
-from typing import Optional
-from beanie import Document, BackLink
+from typing import Optional, List
+from beanie import Document
 from pydantic import Field
 
 
@@ -16,9 +16,6 @@ class Session(Document):
     title: str = Field(..., description="Session title")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
     updated_at: datetime = Field(default_factory=datetime.utcnow, description="Last update timestamp")
-    
-    # Reverse relationship to messages
-    messages: Optional[BackLink["Message"]] = Field(None)
 
     class Settings:
         name = "sessions"
@@ -36,7 +33,7 @@ class Message(Document):
     session_id: str = Field(..., description="Reference to session ID")
     question: str = Field(..., min_length=1, description="User's question")
     answer: str = Field(..., description="LLM generated answer")
-    sources: list[str] = Field(default_factory=list, description="Retrieved document sources")
+    sources: List[str] = Field(default_factory=list, description="Retrieved document sources")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0, description="Answer confidence score")
     created_at: datetime = Field(default_factory=datetime.utcnow, description="Message timestamp")
 

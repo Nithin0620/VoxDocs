@@ -3,7 +3,7 @@ MongoDB Atlas connection and initialization.
 Handles async MongoDB connection using Motor and Beanie.
 """
 import logging
-from motor.motor_asyncio import AsyncClient, AsyncDatabase
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from beanie import init_beanie
 from app.db.models import Session, Message, Document
 from app import config
@@ -11,8 +11,8 @@ from app import config
 logger = logging.getLogger(__name__)
 
 # Global database instance
-db: AsyncDatabase = None
-client: AsyncClient = None
+db: AsyncIOMotorDatabase = None
+client: AsyncIOMotorClient = None
 
 
 async def connect_db() -> None:
@@ -29,7 +29,8 @@ async def connect_db() -> None:
         logger.info("Connecting to MongoDB Atlas...")
 
         # Create async MongoDB client
-        client = AsyncClient(config.MONGODB_URI)
+        # logger.warning("Using MongoDB URI: %s", config.MONGODB_URI)  # Log the URI for debugging (be cautious with sensitive info)
+        client = AsyncIOMotorClient(config.MONGODB_URI)
 
         # Test connection by pinging
         await client.admin.command("ping")
@@ -41,7 +42,7 @@ async def connect_db() -> None:
         # Initialize Beanie ORM with models
         await init_beanie(
             database=db,
-            models=[Session, Message, Document]
+            document_models=[Session, Message, Document]
         )
 
         logger.info("✓ Beanie initialized with models")
@@ -66,13 +67,13 @@ async def close_db() -> None:
             logger.error(f"Error closing MongoDB connection: {str(e)}")
 
 
-def get_db() -> AsyncDatabase:
+def get_db() -> AsyncIOMotorDatabase:
     """
     Get the current database instance.
     For dependency injection in routes.
     
     Returns:
-        AsyncDatabase instance
+        AsyncIOMotorDatabase instance
         
     Raises:
         RuntimeError: If database not initialized

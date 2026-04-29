@@ -5,7 +5,7 @@ Main entry point for the Voice Document Assistant backend.
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.gzip import GZIPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from app import config
 from app.db.database import connect_db, close_db
 from app.routes import upload, query, voice, session, documents
@@ -34,7 +34,7 @@ app.add_middleware(
 )
 
 # Gzip compression
-app.add_middleware(GZIPMiddleware, minimum_size=1000)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # === ROUTES ===
